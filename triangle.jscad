@@ -36,10 +36,8 @@ function getParameterDefinitions() {
 
 function main(params) {
 	return tri(params)
-/*
 		.translate([0,0,-(params.bandWidth+2.0*params.ridgeThickness)])
 		.scale([1,1,-1])
-*/
 ;
 }
 
@@ -66,25 +64,29 @@ function carve3rd(params) {
      carve that deep. So we slice a smaller groove cylinder off the side of the
      slot cylinder first, and an even smaller barrier cylinder out of the entire
      cylinder so that we get a groove outline which we actually want to carve. */
-	var slot_cyl_radius = params.distanceBetweenGrooves/2.0
-		+ params.grooveDepth + params.bandWidth;
-	var groove_cyl_radius = params.distanceBetweenGrooves/2.0 + params.grooveDepth;
-	var barrier_cyl_radius = params.distanceBetweenGrooves/2.0;
+  var slot_cyl_radius = params.distanceBetweenGrooves/2.0
+    + 2.0*params.grooveDepth;
+  var groove_cyl_radius = params.distanceBetweenGrooves/2.0 + params.grooveDepth;
+  var barrier_cyl_radius = params.distanceBetweenGrooves/2.0;
+  var res = 16;
   var slot_cyl = CSG.cylinder({
     start: [0, 0, 0],
     end: [0, 0, params.ridgeThickness + params.bandWidth],
     radiusStart: slot_cyl_radius,
-    radiusEnd: slot_cyl_radius - (params.ridgeThickness + params.bandWidth)
+    radiusEnd: barrier_cyl_radius,
+    resolution: res
     });
   var groove_cyl = CSG.cylinder({
     start: [0, 0, 0],
     end: [0, 0, params.ridgeThickness],
-    radius: groove_cyl_radius
+    radius: groove_cyl_radius,
+    resolution: res
     });
   var barrier_cyl = CSG.cylinder({
     start: [0, 0, params.ridgeThickness],
     end: [0, 0, params.ridgeThickness + params.bandWidth],
-    radius: barrier_cyl_radius
+    radius: barrier_cyl_radius,
+    resolution: res
     });
 	var corner_x = -params.sideLength / 2.0;
 	var corner_y = corner_x / tan(60);
