@@ -29,16 +29,31 @@ function getParameterDefinitions() {
 			type: 'float',
 			initial: 1,
 			caption: 'Width of the stretched rubber band (mm):'
-		}
-
+		},
+		{
+			name: 'outlineWidth',
+			type: 'float',
+			initial: 1,
+			caption: 'Width of the outline (mm):'
+		},
+		{
+			name: 'flip',
+			type: 'choice',
+      values: ['Yes', 'No'],
+			initial: 'No',
+			caption: 'Display it groove side up?:'
+		}    
 		];
 }
 
 function main(params) {
-	return tri(params)
-		.translate([0,0,-(params.bandWidth+2.0*params.ridgeThickness)])
-		.scale([1,1,-1])
-;
+	var triangle = tri(params);
+	if (params.flip == 'Yes') {
+  	triangle = triangle
+	  	.translate([0,0,-(params.bandWidth+2.0*params.ridgeThickness)])
+		  .scale([1,1,-1]);
+  }
+	return triangle;
 }
 
 function tri(params) {
@@ -49,7 +64,8 @@ function tri(params) {
 		.subtract(union(
 			carve3rd(params),
 			carve3rd(params).rotateZ(120), 
-			carve3rd(params).rotateZ(-120)));
+			carve3rd(params).rotateZ(-120)))
+;
 }
 
 function carve3rd(params) {
@@ -68,6 +84,7 @@ function carve3rd(params) {
     + 2.0*params.grooveDepth;
   var groove_cyl_radius = params.distanceBetweenGrooves/2.0 + params.grooveDepth;
   var barrier_cyl_radius = params.distanceBetweenGrooves/2.0;
+  var hollow_cyl_radius = barrier_cyl_radius - params.outlineWidth;
   var res = 16;
   var slot_cyl = CSG.cylinder({
     start: [0, 0, 0],
@@ -88,21 +105,48 @@ function carve3rd(params) {
     radius: barrier_cyl_radius,
     resolution: res
     });
+  var hollow_cyl = CSG.cylinder({
+    start: [0, 0, 0],
+    end: [0, 0, 2*params.ridgeThickness + params.bandWidth],
+    radius: hollow_cyl_radius,
+    resolution: res
+    });
 	var corner_x = -params.sideLength / 2.0;
 	var corner_y = corner_x / tan(60);
-  return slot_cyl
-		.subtract(groove_cyl)
-		.subtract(barrier_cyl)
+  return union(slot_cyl.subtract(groove_cyl).subtract(barrier_cyl),
+		hollow_cyl)
     .translate([0, corner_y, 0]);
 }
 
 function tri3rd(params) {
-	var x = params.sideLength / 2.0;
-	var y = x / tan(60);
-	var bottomCAG = new CSG.Path2D([[x,-y], [-x,-y], [0,0]], true)
+  var x = params.sideLength / 2.0;
+  var y = x / tan(60);
+  var bottom_CAG = new CSG.Path2D([[x,-y], [-x,-y], [0,0]], true)
 		.innerToCAG();
-	var solid3rd = bottomCAG.extrude({offset: [0, 0, 2*params.ridgeThickness+params.bandWidth]});
-	return solid3rd;
+  var thickness = 2*params.ridgeThickness+params.bandWidth;
+  var solid_3rd = bottom_CAG.extrude({offset: [0, 0, thickness]});
+  var s = 1.0*(y-params.outlineWidth)/y;
+  var hollow_3rd = solid_3rd.subtract(solid_3rd.scale([s, s, 1.0]));
+  var solid_cyl_radius 
+    = params.distanceBetweenGrooves/2.0
+      + 2.0*params.grooveDepth + params.outlineWidth;
+	var solid_cyl = CSG.cylinder({
+    start: [0, 0, 0],
+    end: [0, 0, thickness],
+    radius: solid_cyl_radius,
+    resolution: 16
+    }).translate([0, -y, 0]).intersect(solid_3rd);
+  var connecting_tri = CSG.cylinder({
+    start: [0, 0, 0],
+    end: [0, 0, thickness],
+    radius: y,
+    resolution: 3
+    }).rotateZ(-90);
+  var d = y * sin(30); /* distance to side of connecting tri */
+  s =  1.0*(d-params.outlineWidth)/d;
+	var connecting_tri_hollow 
+    = connecting_tri.subtract(connecting_tri.scale([s, s, 1.0]));
+  return hollow_3rd.union(solid_cyl).union(connecting_tri_hollow);
 }
 
 
