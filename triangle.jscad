@@ -90,7 +90,7 @@ function carve3rd(params) {
     start: [0, 0, 0],
     end: [0, 0, params.ridgeThickness + params.bandWidth],
     radiusStart: slot_cyl_radius,
-    radiusEnd: barrier_cyl_radius,
+    radiusEnd: groove_cyl_radius,
     resolution: res
     });
   var groove_cyl = CSG.cylinder({
@@ -113,13 +113,13 @@ function carve3rd(params) {
     start: [0, 0, params.ridgeThickness],
     end: [0, 0, params.ridgeThickness + params.bandWidth],
     radiusStart: tabs_cyl_radius,
-    radiusEnd: tabs_cyl_radius - 2 * params.grooveDepth,
+    radiusEnd: tabs_cyl_radius,
     resolution: res
     });
   tabs_cyl = tabs_cyl.subtract(CSG.cylinder({
     start: [0, 0, params.ridgeThickness],
     end: [0, 0, params.ridgeThickness + params.bandWidth],
-    radius: tabs_cyl_radius - 2 * params.grooveDepth,
+    radius: tabs_cyl_radius - params.grooveDepth,
     resolution: res
     }))
     .intersect(tri3rd(params).translate([0, -corner_y, 0]));
