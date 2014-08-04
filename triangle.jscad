@@ -25,6 +25,12 @@ function getParameterDefinitions() {
 			caption: 'Distance between the grooves on the triangle side (mm):'
 		},
 		{
+			name: 'distanceBetweenTabs',
+			type: 'float',
+			initial: 70,
+			caption: 'Distance between the tab holes on the triangle side (mm):'
+		},
+		{
 			name: 'bandWidth',
 			type: 'float',
 			initial: 1,
@@ -88,11 +94,26 @@ function carve3rd(params) {
     radius: barrier_cyl_radius,
     resolution: res
     });
-	var corner_x = -params.sideLength / 2.0;
-	var corner_y = corner_x / tan(60);
+  var tabs_cyl_radius = params.distanceBetweenTabs/2.0;
+  var tabs_cyl = CSG.cylinder({
+    start: [0, 0, params.ridgeThickness],
+    end: [0, 0, params.ridgeThickness + params.bandWidth],
+    radiusStart: tabs_cyl_radius + 2 * params.grooveDepth,
+    radiusEnd: tabs_cyl_radius,
+    resolution: res
+    });
+  tabs_cyl = tabs_cyl.subtract(CSG.cylinder({
+    start: [0, 0, params.ridgeThickness],
+    end: [0, 0, params.ridgeThickness + params.bandWidth],
+    radius: tabs_cyl_radius,
+    resolution: res
+    }));
+  var corner_x = -params.sideLength / 2.0;
+  var corner_y = corner_x / tan(60);
   return slot_cyl
-		.subtract(groove_cyl)
-		.subtract(barrier_cyl)
+    .subtract(groove_cyl)
+    .subtract(barrier_cyl)
+    .union(tabs_cyl)
     .translate([0, corner_y, 0]);
 }
 
